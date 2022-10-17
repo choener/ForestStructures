@@ -35,6 +35,22 @@ data SPForest r t
   deriving (Read,Show,Eq,Ord,Generic)
 makePrisms ''SPForest
 
+instance Functor (SPForest r) where
+  fmap f = \case
+    SPR r     → SPR r
+    SPT l t r → SPT (f l) (fmap f t) (f r)
+    SPJ xs    → SPJ (map (fmap f) xs)
+    SPE       → SPE
+  {-# Inlinable fmap #-}
+
+instance Foldable (SPForest r) where
+  foldMap = bifoldMap (const mempty)
+  {-# Inlinable foldMap #-}
+
+instance Traversable (SPForest r) where
+  traverse = bitraverse pure
+  {-# Inlinable traverse #-}
+
 instance Bifunctor SPForest where
   first f = \case
     SPR r     → SPR (f r)
@@ -42,11 +58,7 @@ instance Bifunctor SPForest where
     SPJ xs    → SPJ (map (first f) xs)
     SPE       → SPE
   {-# Inlinable first #-}
-  second g = \case
-    SPR r     → SPR r
-    SPT l t r → SPT (g l) (second g t) (g r)
-    SPJ xs    → SPJ (map (second g) xs)
-    SPE       → SPE
+  second = fmap
   {-# Inlinable second #-}
   bimap f g = \case
     SPR r     → SPR (f r)
